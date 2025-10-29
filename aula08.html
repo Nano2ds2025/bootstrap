@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sistema de Gerenciamento</title>
+  <!-- Corrigi os espaços extras nas URLs -->
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.3.1/css/all.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    body {
+      padding-top: 56px;
+      background-color: #f9fafb;
+      font-family: 'Inter', sans-serif;
+    }
+
+    /* Navbar Superior */
+    .navbar {
+      background: linear-gradient(135deg, #10b981, #047857) !important;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+
+    /* Sidebar */
+    #sidebar {
+      min-width: 250px;
+      max-width: 250px;
+      background: #1e293b;
+      color: #f1f5f9;
+      transition: all 0.3s;
+      position: fixed;
+      height: calc(100vh - 56px);
+      top: 56px;
+      left: 0;
+      overflow-y: auto;
+      box-shadow: 2px 0 12px rgba(0,0,0,0.12);
+    }
+
+    #sidebar .sidebar-header {
+      padding: 20px;
+      background: #0f172a;
+      text-align: center;
+      border-bottom: 1px solid #334155;
+    }
+
+    #sidebar ul.components {
+      padding: 15px 0;
+    }
+
+    #sidebar ul li a {
+      padding: 13px 20px;
+      font-size: 1.05em;
+      display: flex;
+      align-items: center;
+      color: #cbd5e1;
+      text-decoration: none;
+      transition: all 0.25s;
+      border-left: 4px solid transparent;
+    }
+
+    #sidebar ul li a i {
+      margin-right: 12px;
+      width: 20px;
+      text-align: center;
+      color: #34d399;
+    }
+
+    #sidebar ul li a:hover {
+      background: #334155;
+      color: white;
+      border-left: 4px solid #10b981;
+    }
+
+    #sidebar ul li.active > a {
+      background: #0f172a;
+      color: white;
+      border-left: 4px solid #10b981;
+    }
+
+    #sidebar ul li.active > a i {
+      color: #34d399;
+    }
+
+    /* Conteúdo Principal */
+    #content {
+      margin-left: 250px;
+      padding: 25px;
+      transition: margin-left 0.3s;
+    }
+
+    .content-section {
+      display: none;
+    }
+
+    .content-section.active {
+      display: block;
+      animation: fadeIn 0.4s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    #relatorioResultado {
+      display: none;
+      margin-top: 25px;
+      animation: fadeIn 0.5s;
+    }
+
+    /* Cards */
+    .card {
+      border-radius: 12px;
+      border: none;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+      transition: transform 0.25s, box-shadow 0.25s;
+    }
+
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 14px rgba(0,0,0,0.09);
+    }
+
+    .card-header {
+      border-radius: 12px 12px 0 0 !important;
+      font-weight: 600;
+      padding: 14px 20px;
+    }
+
+    /* Cores dos cards do dashboard */
+    .bg-primary { background-color: #10b981 !important; }
+    .bg-success { background-color: #0ea5e9 !important; }
+    .bg-warning { background-color: #f59e0b !important; }
+    .bg-danger { background-color: #ef4444 !important; }
+
+    /* Botões */
+    .btn-primary {
+      background-color: #10b981;
+      border-color: #10b981;
+    }
+    .btn-primary:hover {
+      background-color: #0da271;
+      border-color: #0da271;
+    }
+
+    .btn-success {
+      background-color: #0ea5e9;
+      border-color: #0ea5e9;
+    }
+    .btn-success:hover {
+      background-color: #0284c7;
+      border-color: #0284c7;
+    }
+
+    .btn-warning {
+      background-color: #f59e0b;
+      border-color: #f59e0b;
+    }
+    .btn-warning:hover {
+      background-color: #d97706;
+      border-color: #d97706;
+    }
+
+    .btn-danger {
+      background-color: #ef4444;
+      border-color: #ef4444;
+    }
+    .btn-danger:hover {
+      background-color: #dc2626;
+      border-color: #dc2626;
+    }
+
+    /* Tabelas */
+    .table thead th {
+      background-color: #f1f5f9;
+      font-weight: 600;
+    }
+
+    /* Responsividade */
+    @media (max-width: 768px) {
+      #sidebar {
+        margin-left: -250px;
+      }
+      #sidebar.active {
+        margin-left: 0;
+      }
+      #content {
+        margin-left: 0;
+        padding: 15px;
+      }
+      #content.active {
+        margin-left: 250px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navbar Superior -->
+  <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
+    <div class="container-fluid">
+      <button type="button" id="sidebarCollapse" class="btn text-white">
+        <i class="fas fa-bars"></i>
+      </button>
+      <a class="navbar-brand ml-2" href="#"><span>AdminPanel</span></a>
+      <ul class="navbar-nav ml-auto">
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown">
+            <i class="fas fa-user"></i> Usuário
+          </a>
+          <div class="dropdown-menu dropdown-menu-right">
+            <a class="dropdown-item" href="#"><i class="fas fa-cog"></i> Configurações</a>
+            <div class="dropdown-divider"></div>
+            <a class="dropdown-item" href="#"><i class="fas fa-sign-out-alt"></i> Sair</a>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Sidebar -->
+  <nav id="sidebar">
+    <div class="sidebar-header">
+      <h5 class="mb-0"><i class="fas fa-tachometer-alt mr-2"></i> Menu Principal</h5>
+    </div>
+    <ul class="list-unstyled components" id="menu-items">
+      <li class="active" data-target="dashboard">
+        <a href="#"><i class="fas fa-home"></i> Dashboard</a>
+      </li>
+      <li data-target="clientes">
+        <a href="#"><i class="fas fa-users"></i> Clientes</a>
+      </li>
+      <li data-target="produtos">
+        <a href="#"><i class="fas fa-box"></i> Produtos</a>
+      </li>
+      <li data-target="relatorios">
+        <a href="#"><i class="fas fa-chart-line"></i> Relatórios</a>
+      </li>
+      <li data-target="configuracoes">
+        <a href="#"><i class="fas fa-cog"></i> Configurações</a>
+      </li>
+    </ul>
+  </nav>
+
+  <!-- Conteúdo Principal -->
+  <div id="content">
+    
+    <!-- Dashboard -->
+    <div id="dashboard" class="content-section active">
+      <div class="container-fluid">
+        <h2>Relatório de Desempenho</h2>
+        <p class="lead">Visualize o desempenho de vendas e produtos em tempo real.</p>
+
+        <div class="row">
+          <div class="col-md-3">
+            <div class="card text-white mb-3">
+              <div class="card-body text-center">
+                <i class="fas fa-shopping-cart fa-2x mb-2"></i>
+                <h5 class="card-title">Vendas do Mês</h5>
+                <p class="card-text display-4">R$ 25.400</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="card text-white mb-3">
+              <div class="card-body text-center">
+                <i class="fas fa-user-plus fa-2x mb-2"></i>
+                <h5 class="card-title">Novos Clientes</h5>
+                <p class="card-text display-4">120</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="card text-white mb-3">
+              <div class="card-body text-center">
+                <i class="fas fa-box-open fa-2x mb-2"></i>
+                <h5 class="card-title">Produtos Vendidos</h5>
+                <p class="card-text display-4">860</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="card text-white mb-3">
+              <div class="card-body text-center">
+                <i class="fas fa-chart-pie fa-2x mb-2"></i>
+                <h5 class="card-title">Meta Atingida</h5>
+                <p class="card-text display-4">92%</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-8">
+            <div class="card mb-4">
+              <div class="card-header text-white">Vendas Mensais</div>
+              <div class="card-body">
+                <canvas id="vendasChart"></canvas>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="card mb-4">
+              <div class="card-header text-white">Distribuição de Produtos</div>
+              <div class="card-body">
+                <canvas id="produtosChart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Clientes -->
+    <div id="clientes" class="content-section">
+      <div class="container-fluid">
+        <h2>Gerenciar Clientes</h2>
+        <p class="lead">Lista de clientes cadastrados no sistema.</p>
+        <div class="card">
+          <div class="card-body">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>E-mail</th>
+                  <th>Telefone</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                <!-- Será preenchido dinamicamente -->
+              </tbody>
+            </table>
+            <button class="btn btn-primary">Adicionar Cliente</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Produtos -->
+    <div id="produtos" class="content-section">
+      <div class="container-fluid">
+        <h2>Gerenciar Produtos</h2>
+        <p class="lead">Catálogo de produtos disponíveis.</p>
+        <div class="card">
+          <div class="card-body">
+            <div class="row" id="produtos-lista">
+              <!-- Produtos serão inseridos aqui dinamicamente -->
+            </div>
+            <button class="btn btn-primary mt-3" id="btnAdicionarProduto">Adicionar Produto</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Relatórios -->
+    <div id="relatorios" class="content-section">
+      <div class="container-fluid">
+        <h2>Relatórios Avançados</h2>
+        <p class="lead">Exporte ou visualize relatórios detalhados.</p>
+        <div class="card">
+          <div class="card-body">
+            <div class="form-group">
+              <label>Data Inicial</label>
+              <input type="date" class="form-control" id="dataInicial">
+            </div>
+            <div class="form-group">
+              <label>Data Final</label>
+              <input type="date" class="form-control" id="dataFinal">
+            </div>
+            <button class="btn btn-success" id="btnGerarRelatorio">Gerar Relatório</button>
+            <button class="btn btn-outline-secondary ml-2" id="btnExportarPDF">Exportar PDF</button>
+
+            <div id="relatorioResultado" class="mt-4">
+              <h4>Relatório de Vendas</h4>
+              <p id="periodoRelatorio"></p>
+              <table class="table table-bordered table-striped" id="tabelaRelatorio">
+                <thead>
+                  <tr>
+                    <th>Data</th>
+                    <th>Cliente</th>
+                    <th>Produto</th>
+                    <th>Quantidade</th>
+                    <th>Valor (R$)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <!-- Preenchido dinamicamente -->
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <th colspan="4" class="text-right">Total:</th>
+                    <th id="totalRelatorio"></th>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Configurações -->
+    <div id="configuracoes" class="content-section">
+      <div class="container-fluid">
+        <h2>Configurações do Sistema</h2>
+        <p class="lead">Ajuste preferências e parâmetros do sistema.</p>
+        <div class="card">
+          <div class="card-body">
+            <form>
+              <div class="form-group">
+                <label>Nome da Empresa</label>
+                <input type="text" class="form-control" value="PetShop Admin">
+              </div>
+              <div class="form-group">
+                <label>E-mail de Contato</label>
+                <input type="email" class="form-control" value="contato@petshop.com">
+              </div>
+              <div class="form-group">
+                <label>Moeda</label>
+                <select class="form-control">
+                  <option>BRL - Real (R$)</option>
+                  <option>USD - Dólar (US$)</option>
+                </select>
+              </div>
+              <button type="submit" class="btn btn-primary">Salvar Configurações</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Modal de Cliente -->
+  <div class="modal fade" id="clienteModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalTitle">Adicionar Cliente</h5>
+          <button type="button" class="close" data-dismiss="modal">
+            <span>&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <form id="clienteForm">
+            <input type="hidden" id="clienteId">
+            <div class="form-group">
+              <label>Nome</label>
+              <input type="text" class="form-control" id="nome" required>
+            </div>
+            <div class="form-group">
+              <label>E-mail</label>
+              <input type="email" class="form-control" id="email" required>
+            </div>
+            <div class="form-group">
+              <label>Telefone</label>
+              <input type="text" class="form-control" id="telefone" required>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-primary" id="salvarCliente">Salvar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Produto -->
+  <div class="modal fade" id="produtoModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="produtoModalTitle">Adicionar Produto</h5>
+          <button type="button" class="close" data-dismiss="modal">
+            <span>&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <form id="produtoForm">
+            <input type="hidden" id="produtoId">
+            <div class="form-group">
+              <label>Nome do Produto</label>
+              <input type="text" class="form-control" id="produtoNome" required>
+            </div>
+            <div class="form-group">
+              <label>Preço (R$)</label>
+              <input type="number" step="0.01" class="form-control" id="produtoPreco" required>
+            </div>
+            <div class="form-group">
+              <label>URL da Imagem (opcional)</label>
+              <input type="text" class="form-control" id="produtoImagem" placeholder="https://exemplo.com/imagem.jpg">
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-primary" id="salvarProduto">Salvar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+  <script>
+    // Configura jsPDF globalmente
+    window.jsPDF = window.jspdf.jsPDF;
+
+    $(document).ready(function () {
+      // Toggle Sidebar
+      $('#sidebarCollapse').on('click', function () {
+        $('#sidebar').toggleClass('active');
+        $('#content').toggleClass('active');
+      });
+
+      // Navegação entre páginas
+      $('#menu-items li').on('click', function () {
+        const target = $(this).data('target');
+
+        $('#menu-items li').removeClass('active');
+        $(this).addClass('active');
+
+        $('.content-section').removeClass('active');
+        $('#' + target).addClass('active');
+
+        if ($(window).width() <= 768) {
+          $('#sidebar').removeClass('active');
+          $('#content').removeClass('active');
+        }
+      });
+
+      // Inicializa gráficos (só no dashboard)
+      if ($('#dashboard').hasClass('active')) {
+        initCharts();
+      }
+
+      function initCharts() {
+        const ctxVendas = document.getElementById('vendasChart').getContext('2d');
+        new Chart(ctxVendas, {
+          type: 'line',
+          data: {
+            labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out'],
+            datasets: [{
+              label: 'Vendas (R$)',
+              data: [8000, 12000, 9500, 15000, 18000, 20000, 23000, 25000, 24000, 25400],
+              backgroundColor: 'rgba(16, 181, 129, 0.15)',
+              borderColor: 'rgba(16, 181, 129, 1)',
+              borderWidth: 2,
+              fill: true,
+              tension: 0.3
+            }]
+          },
+          options: {
+            responsive: true,
+            scales: {
+              y: { beginAtZero: true }
+            }
+          }
+        });
+
+        const ctxProdutos = document.getElementById('produtosChart').getContext('2d');
+        new Chart(ctxProdutos, {
+          type: 'pie',
+          data: {
+            labels: ['Rações', 'Brinquedos', 'Acessórios', 'Higiene'],
+            datasets: [{
+              data: [45, 25, 15, 15],
+              backgroundColor: [
+                'rgba(16, 181, 129, 0.8)',
+                'rgba(14, 165, 233, 0.8)',
+                'rgba(245, 158, 11, 0.8)',
+                'rgba(239, 68, 68, 0.8)'
+              ]
+            }]
+          }
+        });
+      }
+
+      // ============= GERENCIAMENTO DE CLIENTES =============
+      let clientes = [
+        { id: 1, nome: "Ana Silva", email: "ana@email.com", telefone: "(11) 99999-0000" },
+        { id: 2, nome: "Juliac", email: "julia@email.com", telefone: "(21) 88888-1111" }
+      ];
+      let proximoIdCliente = 3;
+
+      function renderizarClientes() {
+        const tbody = $('#clientes tbody');
+        tbody.empty();
+
+        clientes.forEach(cliente => {
+          tbody.append(`
+            <tr data-id="${cliente.id}">
+              <td>${cliente.nome}</td>
+              <td>${cliente.email}</td>
+              <td>${cliente.telefone}</td>
+              <td>
+                <button class="btn btn-sm btn-warning editar-cliente">Editar</button>
+                <button class="btn btn-sm btn-danger excluir-cliente">Excluir</button>
+              </td>
+            </tr>
+          `);
+        });
+      }
+
+      $('#clientes .btn-primary').on('click', function () {
+        $('#modalTitle').text('Adicionar Cliente');
+        $('#clienteForm')[0].reset();
+        $('#clienteId').val('');
+        $('#clienteModal').modal('show');
+      });
+
+      $(document).on('click', '.editar-cliente', function () {
+        const row = $(this).closest('tr');
+        const id = parseInt(row.data('id'));
+        const cliente = clientes.find(c => c.id === id);
+        if (cliente) {
+          $('#modalTitle').text('Editar Cliente');
+          $('#clienteId').val(cliente.id);
+          $('#nome').val(cliente.nome);
+          $('#email').val(cliente.email);
+          $('#telefone').val(cliente.telefone);
+          $('#clienteModal').modal('show');
+        }
+      });
+
+      $(document).on('click', '.excluir-cliente', function () {
+        if (confirm('Tem certeza que deseja excluir este cliente?')) {
+          const row = $(this).closest('tr');
+          const id = parseInt(row.data('id'));
+          clientes = clientes.filter(c => c.id !== id);
+          renderizarClientes();
+        }
+      });
+
+      $('#salvarCliente').on('click', function () {
+        const id = $('#clienteId').val();
+        const nome = $('#nome').val().trim();
+        const email = $('#email').val().trim();
+        const telefone = $('#telefone').val().trim();
+
+        if (!nome || !email || !telefone) {
+          alert('Preencha todos os campos.');
+          return;
+        }
+
+        if (id) {
+          const clienteIndex = clientes.findIndex(c => c.id == id);
+          if (clienteIndex !== -1) {
+            clientes[clienteIndex] = { id: parseInt(id), nome, email, telefone };
+          }
+        } else {
+          clientes.push({ id: proximoIdCliente++, nome, email, telefone });
+        }
+
+        renderizarClientes();
+        $('#clienteModal').modal('hide');
+        $('#clienteForm')[0].reset();
+      });
+
+      renderizarClientes();
+
+      // ============= GERENCIAMENTO DE PRODUTOS =============
+      let produtos = [
+        { id: 1, nome: "Ração Premium", preco: 89.90, imagem: "https://via.placeholder.com/150" },
+        { id: 2, nome: "Brinquedo para Cães", preco: 35.00, imagem: "https://via.placeholder.com/150" }
+      ];
+      let proximoIdProduto = 3;
+
+      function renderizarProdutos() {
+        const container = $('#produtos-lista');
+        container.empty();
+
+        produtos.forEach(produto => {
+          const precoFormatado = produto.preco.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+          container.append(`
+            <div class="col-md-4 mb-3" data-id="${produto.id}">
+              <div class="card">
+                <img src="${produto.imagem || 'https://via.placeholder.com/150'}" class="card-img-top" alt="${produto.nome}">
+                <div class="card-body">
+                  <h5 class="card-title">${produto.nome}</h5>
+                  <p class="text-muted">${precoFormatado}</p>
+                  <button class="btn btn-warning btn-sm editar-produto">Editar</button>
+                  <button class="btn btn-danger btn-sm excluir-produto">Excluir</button>
+                </div>
+              </div>
+            </div>
+          `);
+        });
+      }
+
+      $('#btnAdicionarProduto').on('click', function () {
+        $('#produtoModalTitle').text('Adicionar Produto');
+        $('#produtoForm')[0].reset();
+        $('#produtoId').val('');
+        $('#produtoModal').modal('show');
+      });
+
+      $(document).on('click', '.editar-produto', function () {
+        const card = $(this).closest('.col-md-4');
+        const id = parseInt(card.data('id'));
+        const produto = produtos.find(p => p.id === id);
+
+        if (produto) {
+          $('#produtoModalTitle').text('Editar Produto');
+          $('#produtoId').val(produto.id);
+          $('#produtoNome').val(produto.nome);
+          $('#produtoPreco').val(produto.preco);
+          $('#produtoImagem').val(produto.imagem || '');
+          $('#produtoModal').modal('show');
+        }
+      });
+
+      $(document).on('click', '.excluir-produto', function () {
+        if (confirm('Tem certeza que deseja excluir este produto?')) {
+          const card = $(this).closest('.col-md-4');
+          const id = parseInt(card.data('id'));
+          produtos = produtos.filter(p => p.id !== id);
+          renderizarProdutos();
+        }
+      });
+
+      $('#salvarProduto').on('click', function () {
+        const id = $('#produtoId').val();
+        const nome = $('#produtoNome').val().trim();
+        const preco = parseFloat($('#produtoPreco').val());
+        const imagem = $('#produtoImagem').val().trim() || 'https://via.placeholder.com/150';
+
+        if (!nome || isNaN(preco) || preco <= 0) {
+          alert('Preencha nome e um preço válido.');
+          return;
+        }
+
+        if (id) {
+          const produtoIndex = produtos.findIndex(p => p.id == id);
+          if (produtoIndex !== -1) {
+            produtos[produtoIndex] = { id: parseInt(id), nome, preco, imagem };
+          }
+        } else {
+          produtos.push({ id: proximoIdProduto++, nome, preco, imagem });
+        }
+
+        renderizarProdutos();
+        $('#produtoModal').modal('hide');
+        $('#produtoForm')[0].reset();
+      });
+
+      renderizarProdutos();
+
+      // ============= GERAR RELATÓRIO =============
+      let vendasSimuladas = [];
+      
+      function gerarVendasSimuladas() {
+        const clientesNomes = clientes.map(c => c.nome);
+        const produtosInfo = produtos.map(p => ({ nome: p.nome, preco: p.preco }));
+        const hoje = new Date();
+        vendasSimuladas = [];
+
+        for (let i = 0; i < 50; i++) {
+          const diasAtras = Math.floor(Math.random() * 90);
+          const dataVenda = new Date();
+          dataVenda.setDate(hoje.getDate() - diasAtras);
+          const dataStr = dataVenda.toISOString().split('T')[0];
+
+          const cliente = clientesNomes[Math.floor(Math.random() * clientesNomes.length)];
+          const produto = produtosInfo[Math.floor(Math.random() * produtosInfo.length)];
+          const qtd = Math.floor(Math.random() * 5) + 1;
+          const valor = (produto.preco * qtd).toFixed(2);
+
+          vendasSimuladas.push({
+            data: dataStr,
+            cliente: cliente,
+            produto: produto.nome,
+            quantidade: qtd,
+            valor: parseFloat(valor)
+          });
+        }
+        vendasSimuladas.sort((a, b) => new Date(a.data) - new Date(b.data));
+      }
+
+      gerarVendasSimuladas();
+
+      $('#btnGerarRelatorio').on('click', function () {
+        const dataIni = $('#dataInicial').val();
+        const dataFim = $('#dataFinal').val();
+
+        if (!dataIni || !dataFim) {
+          alert('Selecione ambas as datas.');
+          return;
+        }
+
+        if (dataIni > dataFim) {
+          alert('A data inicial não pode ser maior que a final.');
+          return;
+        }
+
+        const vendasFiltradas = vendasSimuladas.filter(v => v.data >= dataIni && v.data <= dataFim);
+
+        if (vendasFiltradas.length === 0) {
+          alert('Nenhuma venda encontrada no período selecionado.');
+          $('#relatorioResultado').hide();
+          return;
+        }
+
+        const tbody = $('#tabelaRelatorio tbody');
+        tbody.empty();
+        let total = 0;
+
+        vendasFiltradas.forEach(v => {
+          total += v.valor;
+          const valorFormatado = v.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+          tbody.append(`
+            <tr>
+              <td>${v.data}</td>
+              <td>${v.cliente}</td>
+              <td>${v.produto}</td>
+              <td>${v.quantidade}</td>
+              <td>${valorFormatado}</td>
+            </tr>
+          `);
+        });
+
+        $('#totalRelatorio').text(total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }));
+        $('#periodoRelatorio').text(`Período: ${dataIni.split('-').reverse().join('/')} até ${dataFim.split('-').reverse().join('/')}`);
+        $('#relatorioResultado').show();
+      });
+
+      $('#btnExportarPDF').on('click', function () {
+        if ($('#relatorioResultado').is(':hidden')) {
+          alert('Gere um relatório primeiro.');
+          return;
+        }
+
+        const element = document.getElementById('relatorioResultado');
+        html2canvas(element).then(canvas => {
+          const imgData = canvas.toDataURL('image/png');
+          const pdf = new jsPDF('p', 'mm', 'a4');
+          const imgWidth = 190;
+          const pageHeight = 295;
+          const imgHeight = (canvas.height * imgWidth) / canvas.width;
+          let heightLeft = imgHeight;
+          let position = 10;
+
+          pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+          heightLeft -= pageHeight;
+
+          while (heightLeft >= 0) {
+            position = heightLeft - imgHeight;
+            pdf.addPage();
+            pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+            heightLeft -= pageHeight;
+          }
+
+          pdf.save(`relatorio_vendas_${new Date().toISOString().slice(0,10)}.pdf`);
+        }).catch(err => {
+          console.error('Erro ao gerar PDF:', err);
+          alert('Erro ao gerar PDF. Verifique o console.');
+        });
+      });
+    });
+  </script>
+</body>
+</html>
